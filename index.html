@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Audit Desain Tabel Laporan Pembelian Barang Hingga Bentuk Normal Ketiga (3NF)</title>
+  <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;0,700;1,400&family=Source+Sans+3:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --ink: #1a1410;
+      --ink-muted: #5a4e46;
+      --ink-light: #8a7e78;
+      --cream: #faf7f2;
+      --cream-dark: #f0ebe2;
+      --accent: #b5451b;
+      --accent-soft: #f5e8e3;
+      --rule: #d9cfc5;
+      --code-bg: #f4f0ea;
+      --table-head: #2c241e;
+    }
+
+    body {
+      background: var(--cream);
+      color: var(--ink);
+      font-family: 'Source Sans 3', sans-serif;
+      font-weight: 400;
+      line-height: 1.75;
+      font-size: 17px;
+    }
+
+    /* ── MASTHEAD ── */
+    .masthead {
+      background: var(--table-head);
+      color: var(--cream);
+      padding: 12px 0;
+      text-align: center;
+      font-size: 12px;
+      letter-spacing: 2.5px;
+      text-transform: uppercase;
+      font-weight: 500;
+    }
+
+    /* ── HERO ── */
+    .hero {
+      background: var(--cream-dark);
+      border-bottom: 3px double var(--rule);
+      padding: 60px 24px 48px;
+      text-align: center;
+    }
+    .hero-label {
+      display: inline-block;
+      background: var(--accent);
+      color: #fff;
+      font-size: 11px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      padding: 4px 14px;
+      margin-bottom: 24px;
+      font-weight: 600;
+    }
+    .hero h1 {
+      font-family: 'Lora', serif;
+      font-size: clamp(1.6rem, 4vw, 2.6rem);
+      font-weight: 700;
+      line-height: 1.25;
+      max-width: 760px;
+      margin: 0 auto 20px;
+      color: var(--ink);
+    }
+    .hero-sub {
+      color: var(--ink-muted);
+      font-size: 15px;
+      max-width: 580px;
+      margin: 0 auto 28px;
+    }
+    .hero-meta {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 24px;
+      font-size: 13px;
+      color: var(--ink-light);
+      border-top: 1px solid var(--rule);
+      padding-top: 20px;
+    }
+    .hero-meta span { display: flex; align-items: center; gap: 6px; }
+    .hero-meta strong { color: var(--ink-muted); }
+
+    /* ── LAYOUT ── */
+    .page {
+      display: grid;
+      grid-template-columns: 1fr min(680px, 100%) 1fr;
+      padding: 0 16px;
+    }
+    .page > * { grid-column: 2; }
+    .full-bleed { grid-column: 1 / -1; }
+
+    /* ── ARTICLE BODY ── */
+    article { padding: 56px 0; }
+
+    h2 {
+      font-family: 'Lora', serif;
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--ink);
+      margin: 52px 0 16px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid var(--rule);
+    }
+    h2:first-child { margin-top: 0; }
+
+    h3 {
+      font-family: 'Lora', serif;
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: var(--accent);
+      margin: 36px 0 12px;
+    }
+
+    p { margin-bottom: 18px; color: var(--ink); }
+
+    /* ── PULLQUOTE ── */
+    blockquote {
+      border-left: 4px solid var(--accent);
+      background: var(--accent-soft);
+      padding: 18px 24px;
+      margin: 28px 0;
+      border-radius: 0 6px 6px 0;
+    }
+    blockquote p { margin: 0; font-style: italic; color: var(--ink-muted); }
+
+    /* ── TABLES ── */
+    .table-wrap { overflow-x: auto; margin: 24px 0; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14.5px;
+      background: #fff;
+      border: 1px solid var(--rule);
+    }
+    thead { background: var(--table-head); color: #fff; }
+    thead th { padding: 11px 14px; text-align: left; font-weight: 600; font-size: 13px; letter-spacing: 0.5px; }
+    tbody tr:nth-child(even) { background: var(--cream-dark); }
+    tbody td { padding: 9px 14px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+    .pk { color: var(--accent); font-weight: 700; }
+    .fk { color: #1a5c9e; font-weight: 600; }
+    .badge-pk { background: var(--accent); color: #fff; font-size: 10px; padding: 1px 5px; border-radius: 3px; margin-left: 4px; vertical-align: middle; }
+    .badge-fk { background: #1a5c9e; color: #fff; font-size: 10px; padding: 1px 5px; border-radius: 3px; margin-left: 4px; vertical-align: middle; }
+
+    /* ── CODE ── */
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--rule);
+      border-radius: 6px;
+      padding: 18px 20px;
+      font-size: 13.5px;
+      font-family: 'Courier New', monospace;
+      line-height: 1.6;
+      overflow-x: auto;
+      margin: 20px 0;
+    }
+    code { font-family: 'Courier New', monospace; font-size: 0.88em; background: var(--code-bg); padding: 1px 5px; border-radius: 3px; }
+
+    /* ── INFO BOXES ── */
+    .info-box {
+      background: var(--cream-dark);
+      border: 1px solid var(--rule);
+      border-radius: 8px;
+      padding: 20px 24px;
+      margin: 20px 0;
+    }
+    .info-box h4 { font-family: 'Lora', serif; font-size: 1rem; margin-bottom: 10px; color: var(--ink); }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 16px;
+      margin: 20px 0;
+    }
+
+    ul, ol { padding-left: 22px; margin-bottom: 18px; }
+    li { margin-bottom: 6px; }
+
+    /* ── NORMALIZATION FLOW ── */
+    .flow {
+      display: flex;
+      align-items: stretch;
+      gap: 0;
+      margin: 28px 0;
+      overflow-x: auto;
+    }
+    .flow-step {
+      flex: 1;
+      min-width: 130px;
+      background: var(--cream-dark);
+      border: 1px solid var(--rule);
+      padding: 14px 16px;
+      text-align: center;
+      font-size: 13px;
+      position: relative;
+    }
+    .flow-step strong { display: block; font-family: 'Lora', serif; font-size: 15px; color: var(--accent); margin-bottom: 4px; }
+    .flow-step:not(:last-child)::after {
+      content: '→';
+      position: absolute;
+      right: -14px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--accent);
+      font-size: 18px;
+      z-index: 2;
+      background: var(--cream);
+      padding: 0 2px;
+    }
+
+    /* ── VERDICT BOX ── */
+    .verdict {
+      border: 2px solid var(--accent);
+      border-radius: 8px;
+      padding: 20px 24px;
+      margin: 28px 0;
+      background: var(--accent-soft);
+    }
+    .verdict h4 { color: var(--accent); font-family: 'Lora', serif; margin-bottom: 8px; }
+
+    /* ── FOOTER ── */
+    footer {
+      background: var(--table-head);
+      color: #a8958a;
+      text-align: center;
+      padding: 32px 24px;
+      font-size: 13px;
+      line-height: 2;
+      margin-top: 0;
+    }
+    footer strong { color: var(--cream); }
+
+    @media (max-width: 600px) {
+      .hero h1 { font-size: 1.4rem; }
+      h2 { font-size: 1.25rem; }
+      .flow { flex-direction: column; }
+      .flow-step:not(:last-child)::after { content: '↓'; right: 50%; top: auto; bottom: -16px; transform: translateX(50%); }
+    }
+  </style>
+</head>
+<body>
+
+<div class="masthead">
+  Makalah Praktikum Perancangan Basis Data — Politeknik Negeri Lampung
+</div>
+
+<div class="hero">
+  <div class="hero-label">Blog Makalah · Praktikum M6</div>
+  <h1>Audit Desain Tabel Laporan Pembelian Barang Hingga Bentuk Normal Ketiga (3NF)</h1>
+  <p class="hero-sub">
+    Analisis mendalam terhadap anomali dan redundansi pada tabel transaksi pembelian,
+    serta proses dekomposisi bertahap dari 1NF sampai 3NF menggunakan pendekatan ketergantungan fungsional.
+  </p>
+  <div class="hero-meta">
+    <span><strong>Mata Kuliah:</strong> Perancangan Basis Data</span>
+    <span><strong>Program Studi:</strong> D3 Manajemen Informatika</span>
+    <span><strong>Praktikum:</strong> Minggu Ke-6</span>
+    <span><strong>Institusi:</strong> POLINELA</span>
+  </div>
+</div>
+
+<div class="page">
+  <article>
+
+    <!-- ═══════════════════════════════════════════ -->
+    <h2>1. Pendahuluan</h2>
+
+    <p>
+      Perancangan basis data yang baik merupakan fondasi dari sistem informasi yang handal. Salah satu
+      tahap kritis dalam perancangan tersebut adalah proses <em>normalisasi</em>, yaitu serangkaian aturan formal
+      untuk mengorganisasi atribut ke dalam tabel-tabel yang lebih efisien, minim redundansi, dan bebas dari
+      berbagai jenis anomali operasional.
+    </p>
+
+    <p>
+      Praktikum minggu ke-6 mata kuliah Perancangan Basis Data ini berfokus pada <strong>audit desain lanjutan</strong>,
+      yaitu kemampuan mahasiswa tidak sekadar melakukan langkah normalisasi, tetapi mampu menjelaskan alasan akademik
+      di balik setiap keputusan dekomposisi tabel. Kasus yang dianalisis adalah tabel
+      <strong>Laporan Pembelian Barang</strong> yang masih menyatukan data pemasok, transaksi pembelian, dan
+      rincian barang dalam satu struktur yang lebar.
+    </p>
+
+    <blockquote>
+      <p>
+        Normalisasi yang baik bukan hanya memecah tabel, tetapi memastikan setiap pemisahan dilandasi oleh
+        ketergantungan fungsional yang dapat dibuktikan secara formal.
+      </p>
+    </blockquote>
+
+    <p>
+      Artikel ini memaparkan tabel awal yang bermasalah, mengidentifikasi redundansi dan anomali yang timbul,
+      lalu mendokumentasikan proses perbaikan secara bertahap melalui 1NF, 2NF, dan 3NF hingga diperoleh
+      skema akhir yang lebih stabil.
+    </p>
+
+
+    <!-- ═══════════════════════════════════════════ -->
+    <h2>2. Tabel Awal yang Diaudit</h2>
+
+    <p>
+      Tabel awal yang menjadi objek audit adalah tabel <code>laporan_pembelian</code> dengan sepuluh atribut.
+      Tabel ini digunakan oleh unit pengadaan untuk mencatat setiap transaksi pembelian barang kepada pemasok.
+    </p>
+
+    <div class="info-box">
+      <h4>Struktur Atribut Tabel Awal: <code>laporan_pembelian</code></h4>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>No.</th><th>Nama Atribut</th><th>Contoh Nilai</th><th>Kelompok Data</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>1</td><td>no_pembelian</td><td>PB001</td><td>Kunci transaksi</td></tr>
+            <tr><td>2</td><td>tanggal_pembelian</td><td>2026-04-10</td><td>Transaksi</td></tr>
+            <tr><td>3</td><td>id_pemasok</td><td>SUP01</td><td>Master pemasok</td></tr>
+            <tr><td>4</td><td>nama_pemasok</td><td>CV Sinar Jaya</td><td>Master pemasok</td></tr>
+            <tr><td>5</td><td>alamat_pemasok</td><td>Jl. Melati 10</td><td>Master pemasok</td></tr>
+            <tr><td>6</td><td>kode_barang</td><td>BRG01</td><td>Master barang</td></tr>
+            <tr><td>7</td><td>nama_barang</td><td>Mouse Wireless</td><td>Master barang</td></tr>
+            <tr><td>8</td><td>jumlah</td><td>2</td><td>Detail transaksi</td></tr>
+            <tr><td>9</td><td>harga_beli</td><td>75.000</td><td>Detail transaksi</td></tr>
+            <tr><td>10</td><td>subtotal</td><td>150.000</td><td>Detail transaksi (turunan)</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <p>Berikut adalah tiga baris data sampel yang menggambarkan kondisi tabel awal secara konkret:</p>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>no_pembelian</th><th>tanggal</th><th>id_pemasok</th><th>nama_pemasok</th>
+            <th>alamat_pemasok</th><th>kode_barang</th><th>nama_barang</th>
+            <th>jumlah</th><th>harga_beli</th><th>subtotal</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>PB001</td><td>2026-04-10</td><td>SUP01</td><td>CV Sinar Jaya</td>
+            <td>Jl. Melati 10</td><td>BRG01</td><td>Mouse Wireless</td>
+            <td>2</td><td>75.000</td><td>150.000</td>
+          </tr>
+          <tr>
+            <td>PB001</td><td>2026-04-10</td><td>SUP01</td><td>CV Sinar Jaya</td>
+            <td>Jl. Melati 10</td><td>BRG02</td><td>Keyboard Mechanical</td>
+            <td>1</td><td>250.000</td><td>250.000</td>
+          </tr>
+          <tr>
+            <td>PB002</td><td>2026-04-11</td><td>SUP02</td><td>PT Maju Abadi</td>
+            <td>Jl. Kenanga 5</td><td>BRG01</td><td>Mouse Wireless</td>
+            <td>3</td><td>76.000</td><td>228.000</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>
+      Dari data sampel terlihat bahwa <em>CV Sinar Jaya</em> dan <em>Jl. Melati 10</em> tercatat dua kali
+      hanya karena satu transaksi memuat dua jenis barang. Demikian pula nama barang <em>Mouse Wireless</em>
+      muncul pada dua transaksi berbeda (PB001 dan PB002) dengan nilai yang sedikit berbeda.
+      Ini adalah sinyal awal adanya redundansi struktural yang perlu diselesaikan melalui normalisasi.
+    </p>
+
+
+    <!-- ═══════════════════════════════════════════ -->
+    <h2>3. Identifikasi Redundansi dan Anomali</h2>
+
+    <h3>3.1 Redundansi Data</h3>
+    <p>
+      Redundansi adalah kondisi di mana fakta yang sama disimpan berulang kali pada banyak baris tabel.
+      Pada tabel <code>laporan_pembelian</code> ditemukan tiga jenis redundansi utama:
+    </p>
+
+    <div class="grid-2">
+      <div class="info-box">
+        <h4>Redundansi Data Pemasok</h4>
+        <p>
+          Atribut <code>nama_pemasok</code> dan <code>alamat_pemasok</code> tersalin ulang pada setiap baris
+          yang melibatkan pemasok yang sama. Jika pemasok SUP01 memiliki 50 transaksi pembelian dengan
+          30 item, maka nama dan alamat pemasok tersebut tersimpan sebanyak 30 kali — padahal
+          faktanya hanya satu.
+        </p>
+      </div>
+      <div class="info-box">
+        <h4>Redundansi Data Barang</h4>
+        <p>
+          Atribut <code>nama_barang</code> berulang pada setiap transaksi yang membeli barang yang sama.
+          Mouse Wireless yang dibeli pada PB001 dan PB002 menyimpan nama yang sama dua kali, bahkan
+          dapat tidak konsisten jika data dimasukkan secara manual.
+        </p>
+      </div>
+    </div>
+
+    <h3>3.2 Anomali Operasional</h3>
+    <p>
+      Redundansi pada tabel ini menimbulkan tiga jenis anomali klasik yang mengancam integritas data:
+    </p>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Jenis Anomali</th><th>Deskripsi</th><th>Contoh pada Kasus Ini</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Update Anomaly</strong></td>
+            <td>Perubahan satu fakta mengharuskan pembaruan pada banyak baris.</td>
+            <td>Jika alamat CV Sinar Jaya berubah, semua baris yang memuat SUP01 harus diperbarui. Jika terlewat, data menjadi inkonsisten.</td>
+          </tr>
+          <tr>
+            <td><strong>Insert Anomaly</strong></td>
+            <td>Fakta baru tidak dapat dicatat tanpa bergantung pada data lain yang belum ada.</td>
+            <td>Pemasok baru tidak dapat dimasukkan ke tabel sebelum ada transaksi pembelian pertama dari pemasok tersebut.</td>
+          </tr>
+          <tr>
+            <td><strong>Delete Anomaly</strong></td>
+            <td>Penghapusan satu fakta secara tidak sengaja menghapus fakta lain yang berbeda.</td>
+            <td>Jika satu-satunya transaksi dengan pemasok SUP02 dihapus, data PT Maju Abadi ikut hilang dari sistem.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <blockquote>
+      <p>
+        Ketiga anomali ini merupakan konsekuensi langsung dari ketergantungan fungsional yang tidak dikelola
+        dengan benar dalam struktur tabel. Normalisasi hadir sebagai solusi formal untuk menghilangkan
+        anomali tersebut.
+      </p>
+    </blockquote>
+
+
+    <!-- ═══════════════════════════════════════════ -->
+    <h2>4. Tahap Normalisasi 1NF</h2>
+
+    <p>
+      <strong>First Normal Form (1NF)</strong> mensyaratkan bahwa setiap atribut dalam tabel harus bersifat
+      atomik — artinya satu sel hanya menyimpan satu nilai tunggal — dan setiap baris mewakili satu
+      fakta yang unik.
+    </p>
+
+    <h3>4.1 Pemeriksaan 1NF pada Tabel Awal</h3>
+    <p>
+      Pada implementasi fisik awal, terdapat risiko bahwa beberapa item barang ditulis dalam satu kolom
+      sebagai teks gabungan. Misalnya:
+    </p>
+    <pre>no_pembelian | kode_barang      | nama_barang
+PB001        | BRG01, BRG02     | Mouse Wireless, Keyboard Mechanical</pre>
+
+    <p>
+      Kondisi ini melanggar 1NF karena satu sel memuat lebih dari satu nilai (repeating group).
+      Perbaikan dilakukan dengan memisahkan setiap item barang ke baris tersendiri, sehingga
+      kunci komposit transaksi menjadi <code>(no_pembelian, kode_barang)</code>.
+    </p>
+
+    <h3>4.2 Hasil Setelah 1NF</h3>
+    <p>
+      Setelah perbaikan 1NF, setiap baris mewakili satu kombinasi unik antara satu transaksi pembelian
+      dan satu kode barang. Data sampel menjadi:
+    </p>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>no_pembelian <span class="badge-pk">PK</span></th>
+            <th>kode_barang <span class="badge-pk">PK</span></th>
+            <th>tanggal_pembelian</th><th>id_pemasok</th>
+            <th>nama_pemasok</th><th>alamat_pemasok</th>
+            <th>nama_barang</th><th>jumlah</th><th>harga_beli</th><th>subtotal</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>PB001</td><td>BRG01</td><td>2026-04-10</td>
+            <td>SUP01</td><td>CV Sinar Jaya</td><td>Jl. Melati 10</td>
+            <td>Mouse Wireless</td><td>2</td><td>75.000</td><td>150.000</td>
+          </tr>
+          <tr>
+            <td>PB001</td><td>BRG02</td><td>2026-04-10</td>
+            <td>SUP01</td><td>CV Sinar Jaya</td><td>Jl. Melati 10</td>
+            <td>Keyboard Mechanical</td><td>1</td><td>250.000</td><td>250.000</td>
+          </tr>
+          <tr>
+            <td>PB002</td><td>BRG01</td><td>2026-04-11</td>
+            <td>SUP02</td><td>PT Maju Abadi</td><td>Jl. Kenanga 5</td>
+            <td>Mouse Wireless</td><td>3</td><td>76.000</td><td>228.000</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="verdict">
+      <h4>✓ Status 1NF</h4>
+      <p>Tabel sudah memenuhi 1NF karena setiap sel hanya menyimpan satu nilai atomik dan setiap baris
+      mewakili satu kombinasi unik <code>(no_pembelian, kode_barang)</code>. Namun redundansi data
+      pemasok dan nama barang masih ada — ini akan diselesaikan pada tahap berikutnya.</p>
+    </div>
+
+
+    <!-- ═══════════════════════════════════════════ -->
+    <h2>5. Tahap Normalisasi 2NF</h2>
+
+    <p>
+      <strong>Second Normal Form (2NF)</strong> mensyaratkan bahwa tabel sudah dalam 1NF <em>dan</em>
+      setiap atribut non-kunci harus bergantung secara penuh pada seluruh kunci primer, bukan hanya
+      sebagian dari kunci primer tersebut.
+    </p>
+
+    <h3>5.1 Analisis Ketergantungan Parsial</h3>
+    <p>
+      Kunci primer gabungan saat ini adalah <code>(no_pembelian, kode_barang)</code>.
+      Mari periksa apakah atribut non-kunci bergantung pada keseluruhan kunci atau hanya sebagian:
+    </p>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Atribut Non-Kunci</th><th>Bergantung pada</th>
+            <th>Jenis Ketergantungan</th><th>Tindakan</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>tanggal_pembelian</td>
+            <td>no_pembelian saja</td>
+            <td style="color:#c0392b">⚠ Parsial</td>
+            <td>Pindahkan ke tabel <code>pembelian</code></td>
+          </tr>
+          <tr>
+            <td>id_pemasok</td>
+            <td>no_pembelian saja</td>
+            <td style="color:#c0392b">⚠ Parsial</td>
+            <td>Pindahkan ke tabel <code>pembelian</code></td>
+          </tr>
+          <tr>
+            <td>nama_barang</td>
+            <td>kode_barang saja</td>
+            <td style="color:#c0392b">⚠ Parsial</td>
+            <td>Pindahkan ke tabel <code>barang</code></td>
+          </tr>
+          <tr>
+            <td>jumlah</td>
+            <td>(no_pembelian, kode_barang)</td>
+            <td style="color:green">✓ Penuh</td>
+            <td>Tetap di tabel detail</td>
+          </tr>
+          <tr>
+            <td>harga_beli</td>
+            <td>(no_pembelian, kode_barang)</td>
+            <td style="color:green">✓ Penuh</td>
+            <td>Tetap di tabel detail</td>
+          </tr>
+          <tr>
+            <td>subtotal</td>
+            <td>(no_pembelian, kode_barang)</td>
+            <td style="color:green">✓ Penuh</td>
+            <td>Tetap di tabel detail</td>
+          </tr>
+          <tr>
+            <td>nama_pemasok</td>
+            <td>no_pembelian → id_pemasok → nama_pemasok</td>
+            <td style="color:#e67e22">→ Transitif</td>
+            <td>Ditangani di 3NF</td>
+          </tr>
+          <tr>
+            <td>alamat_pemasok</td>
+            <td>no_pembelian → id_pemasok → alamat_pemasok</td>
+            <td style="color:#e67e22">→ Transitif</td>
+            <td>Ditangani di 3NF</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>5.2 Hasil Setelah 2NF</h3>
+    <p>
+      Atribut dengan ketergantungan parsial dipisahkan menjadi tabel tersendiri.
+      Tabel detail hanya menyimpan atribut yang benar-benar bergantung pada kunci gabungan.
+    </p>
+
+    <div class="grid-2">
+      <div class="info-box">
+        <h4>Tabel <code>barang</code> (baru)</h4>
+        <ul>
+          <li><code>kode_barang</code> <span class="badge-pk">PK</span></li>
+          <li><code>nama_barang</code></li>
+        </ul>
+        <p style="font-size:13px;color:var(--ink-muted);margin:0">
+          nama_barang hanya bergantung pada kode_barang, bukan pada no_pembelian.
+        </p>
+      </div>
+      <div class="info-box">
+        <h4>Tabel <code>detail_pembelian</code> (diperbaiki)</h4>
+        <ul>
+          <li><code>no_pembelian</code> <span class="badge-fk">FK</span></li>
+          <li><code>kode_barang</code> <span class="badge-fk">FK</span></li>
+          <li><code>jumlah</code></li>
+          <li><code>harga_beli</code></li>
+          <li><code>subtotal</code></li>
+        </ul>
+      </div>
+    </div>
+
+    <p>
+      Sementara itu, tabel <code>pembelian</code> menyimpan atribut yang bergantung penuh pada
+      <code>no_pembelian</code> — namun masih mengandung <code>nama_pemasok</code> dan
+      <code>alamat_pemasok</code> yang bersifat transitif. Ini akan diselesaikan pada 3NF.
+    </p>
+
+    <div class="verdict">
+      <h4>✓ Status 2NF</h4>
+      <p>Setelah dekomposisi, tidak ada lagi atribut non-kunci yang hanya bergantung pada sebagian
+      kunci primer. Tabel sudah memenuhi 2NF. Ketergantungan transitif pada data pemasok akan
+      menjadi fokus tahap selanjutnya.</p>
+    </div>
+
+
+    <!-- ═══════════════════════════════════════════ -->
+    <h2>6. Tahap Normalisasi 3NF</h2>
+
+    <p>
+      <strong>Third Normal Form (3NF)</strong> mensyaratkan bahwa tabel sudah dalam 2NF <em>dan</em>
+      tidak ada atribut non-kunci yang bergantung pada atribut non-kunci lain (ketergantungan transitif).
+    </p>
+
+    <h3>6.1 Analisis Ketergantungan Transitif</h3>
+    <p>
+      Pada tabel <code>pembelian</code> pasca 2NF, masih terdapat ketergantungan transitif:
+    </p>
+
+    <pre>no_pembelian  →  id_pemasok  →  nama_pemasok
+no_pembelian  →  id_pemasok  →  alamat_pemasok</pre>
+
+    <p>
+      Artinya, <code>nama_pemasok</code> dan <code>alamat_pemasok</code> tidak bergantung langsung
+      pada kunci primer <code>no_pembelian</code>, melainkan melalui <code>id_pemasok</code>
+      sebagai perantara. Ini adalah pelanggaran 3NF karena atribut non-kunci bergantung
+      pada atribut non-kunci lain.
+    </p>
+
+    <blockquote>
+      <p>
+        Jika <code>id_pemasok</code> yang menentukan nama dan alamat pemasok, maka data tersebut
+        seharusnya diletakkan pada tabel tersendiri dengan <code>id_pemasok</code> sebagai kunci primer.
+      </p>
+    </blockquote>
+
+    <h3>6.2 Pemisahan Tabel Master Pemasok</h3>
+    <p>
+      Atribut <code>nama_pemasok</code> dan <code>alamat_pemasok</code> dipindahkan ke tabel
+      <code>pemasok</code> yang baru, dengan <code>id_pemasok</code> sebagai kunci primer.
+      Tabel <code>pembelian</code> hanya menyimpan <code>id_pemasok</code> sebagai foreign key.
+    </p>
+
+    <div class="verdict">
+      <h4>✓ Status 3NF</h4>
+      <p>Setelah pemisahan tabel pemasok, tidak ada lagi ketergantungan transitif dalam
+      skema. Seluruh atribut non-kunci bergantung langsung dan penuh pada kunci primer
+      masing-masing tabel. Skema telah memenuhi 3NF.</p>
+    </div>
+
+
+    <!-- ═══════════════════════════════════════════ -->
+    <h2>7. Hasil Tabel Final</h2>
+
+    <p>
+      Setelah melalui tiga tahap normalisasi, tabel tunggal <code>laporan_pembelian</code>
+      terdekomposisi menjadi empat tabel yang masing-masing memiliki tanggung jawab yang jelas
+      dan terpisah.
+    </p>
+
+    <div class="flow">
+      <div class="flow-step"><strong>Tabel Awal</strong>10 atribut<br>1 tabel</div>
+      <div class="flow-step"><strong>1NF</strong>Nilai atomik<br>Kunci komposit</div>
+      <div class="flow-step"><strong>2NF</strong>Pisah barang<br>dari detail</div>
+      <div class="flow-step"><strong>3NF</strong>Pisah pemasok<br>dari transaksi</div>
+      <div class="flow-step"><strong>Hasil Final</strong>4 tabel<br>terstruktur</div>
+    </div>
+
+    <h3>Tabel 1: <code>pemasok</code></h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Kolom</th><th>Tipe Data</th><th>Keterangan</th></tr></thead>
+        <tbody>
+          <tr><td><code>id_pemasok</code> <span class="badge-pk">PK</span></td><td>VARCHAR(10)</td><td>Kunci unik pemasok</td></tr>
+          <tr><td><code>nama_pemasok</code></td><td>VARCHAR(100)</td><td>Nama badan usaha pemasok</td></tr>
+          <tr><td><code>alamat_pemasok</code></td><td>TEXT</td><td>Alamat lengkap pemasok</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="font-size:14px;color:var(--ink-muted)">
+      Menyimpan data master pemasok. Tidak berulang per transaksi. Perubahan alamat cukup
+      dilakukan sekali di sini.
+    </p>
+
+    <h3>Tabel 2: <code>barang</code></h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Kolom</th><th>Tipe Data</th><th>Keterangan</th></tr></thead>
+        <tbody>
+          <tr><td><code>kode_barang</code> <span class="badge-pk">PK</span></td><td>VARCHAR(10)</td><td>Kunci unik barang</td></tr>
+          <tr><td><code>nama_barang</code></td><td>VARCHAR(100)</td><td>Nama deskriptif barang</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="font-size:14px;color:var(--ink-muted)">
+      Menyimpan data master barang. Nama barang tidak lagi tersalin pada setiap detail transaksi.
+    </p>
+
+    <h3>Tabel 3: <code>pembelian</code></h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Kolom</th><th>Tipe Data</th><th>Keterangan</th></tr></thead>
+        <tbody>
+          <tr><td><code>no_pembelian</code> <span class="badge-pk">PK</span></td><td>VARCHAR(10)</td><td>Nomor unik transaksi pembelian</td></tr>
+          <tr><td><code>tanggal_pembelian</code></td><td>DATE</td><td>Tanggal transaksi dilakukan</td></tr>
+          <tr><td><code>id_pemasok</code> <span class="badge-fk">FK</span></td><td>VARCHAR(10)</td><td>Referensi ke tabel pemasok</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="font-size:14px;color:var(--ink-muted)">
+      Menyimpan header transaksi pembelian. Hanya menyimpan referensi ke pemasok melalui FK,
+      bukan menyalin ulang data pemasok.
+    </p>
+
+    <h3>Tabel 4: <code>detail_pembelian</code></h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Kolom</th><th>Tipe Data</th><th>Keterangan</th></tr></thead>
+        <tbody>
+          <tr><td><code>no_pembelian</code> <span class="badge-fk">FK</span></td><td>VARCHAR(10)</td><td>Referensi ke tabel pembelian</td></tr>
+          <tr><td><code>kode_barang</code> <span class="badge-fk">FK</span></td><td>VARCHAR(10)</td><td>Referensi ke tabel barang</td></tr>
+          <tr><td><code>jumlah</code></td><td>INT</td><td>Banyaknya barang yang dibeli</td></tr>
+          <tr><td><code>harga_beli</code></td><td>DECIMAL(12,2)</td><td>Harga satuan saat transaksi</td></tr>
+          <tr><td><code>subtotal</code></td><td>DECIMAL(12,2)</td><td>Hasil kalkulasi jumlah × harga</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="font-size:14px;color:var(--ink-muted)">
+      Menyimpan rincian item dalam satu transaksi pembelian. Kunci primer gabungan adalah
+      <code>(no_pembelian, kode_barang)</code>. Satu transaksi dapat memuat banyak item.
+    </p>
+
+
+    <!-- ═══════════════════════════════════════════ -->
+    <h2>8. Perbandingan Sebelum dan Sesudah Normalisasi</h2>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Aspek</th><th>Sebelum Normalisasi</th><th>Sesudah 3NF</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Jumlah tabel</td>
+            <td>1 tabel</td>
+            <td>4 tabel terstruktur</td>
+          </tr>
+          <tr>
+            <td>Redundansi data pemasok</td>
+            <td>Berulang per transaksi</td>
+            <td>Disimpan sekali di tabel <code>pemasok</code></td>
+          </tr>
+          <tr>
+            <td>Redundansi data barang</td>
+            <td>Berulang per detail baris</td>
+            <td>Disimpan sekali di tabel <code>barang</code></td>
+          </tr>
+          <tr>
+            <td>Update anomaly</td>
+            <td>Perlu update banyak baris</td>
+            <td>Cukup update satu baris di tabel master</td>
+          </tr>
+          <tr>
+            <td>Insert anomaly</td>
+            <td>Pemasok baru butuh transaksi</td>
+            <td>Pemasok dapat langsung dicatat</td>
+          </tr>
+          <tr>
+            <td>Delete anomaly</td>
+            <td>Hapus transaksi = hapus data master</td>
+            <td>Data master tetap aman</td>
+          </tr>
+          <tr>
+            <td>Konsistensi data</td>
+            <td>Rentan tidak konsisten</td>
+            <td>Terjamin oleh FK constraint</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+
+    <!-- ═══════════════════════════════════════════ -->
+    <h2>9. Kesimpulan</h2>
+
+    <p>
+      Audit desain tabel <code>laporan_pembelian</code> menunjukkan bahwa tabel tunggal yang
+      mencampur data pemasok, transaksi, dan rincian barang mengandung redundansi struktural
+      yang serius serta berpotensi menimbulkan tiga jenis anomali: update, insert, dan delete anomaly.
+    </p>
+
+    <p>
+      Melalui normalisasi bertahap hingga 3NF, tabel awal berhasil didekomposisi menjadi empat
+      tabel yang masing-masing memiliki tanggung jawab tunggal yang jelas:
+    </p>
+    <ul>
+      <li><strong>pemasok</strong> — menyimpan data master pemasok</li>
+      <li><strong>barang</strong> — menyimpan data master barang</li>
+      <li><strong>pembelian</strong> — menyimpan header transaksi</li>
+      <li><strong>detail_pembelian</strong> — menyimpan rincian item per transaksi</li>
+    </ul>
+
+    <p>
+      Setiap keputusan dekomposisi dilandasi oleh ketergantungan fungsional yang dapat dibuktikan:
+      pemisahan <code>barang</code> didasarkan pada ketergantungan parsial (2NF), sementara
+      pemisahan <code>pemasok</code> didasarkan pada ketergantungan transitif (3NF).
+    </p>
+
+    <p>
+      Hasil akhir skema yang dinormalisasi lebih efisien dalam penggunaan ruang penyimpanan,
+      lebih stabil terhadap perubahan data, lebih mudah dipelihara, dan lebih aman terhadap
+      inkonsistensi data dalam jangka panjang. Inilah esensi dari normalisasi sebagai pendekatan
+      akademik dalam perancangan basis data yang profesional.
+    </p>
+
+    <div class="verdict">
+      <h4>Pernyataan Kesesuaian Normalisasi</h4>
+      <p>
+        Skema akhir yang terdiri dari empat tabel (pemasok, barang, pembelian, detail_pembelian)
+        telah memenuhi syarat 1NF (nilai atomik), 2NF (tanpa ketergantungan parsial), dan 3NF
+        (tanpa ketergantungan transitif). Skema ini siap diimplementasikan sebagai basis
+        perancangan fisik basis data sistem pengadaan barang.
+      </p>
+    </div>
+
+  </article>
+</div>
+
+<footer>
+  <strong>Blog Makalah Praktikum M6 — Audit Desain Lanjutan dengan Normalisasi</strong><br>
+  Politeknik Negeri Lampung · Jurusan Teknologi Informasi · D3 Manajemen Informatika<br>
+  Mata Kuliah: Perancangan Basis Data · Praktikum Minggu Ke-6
+</footer>
+
+</body>
+</html>
